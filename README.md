@@ -151,10 +151,11 @@ This step completes the original idea of implementing statistics and added some 
 ## What changes with SongBridge
 <table>
 <tr><th>Feature</th><th>Without SongBridge</th><th>With SongBridge</th></tr>
-<tr><td>Currently played difficulty</td><td>Not communicated through Websocket</td><td>Shown exactly</td></tr>
-<tr><td>Duplicate custom maps (same title/artist, different mapper)</td><td>No additional data shown (by design, to avoid wrong info)</td><td>Correctly disambiguated via in-game mapper name + difficulty match</td></tr>
-<tr><td>Song length</td><td>May be missing/incorrect for some songs</td><td>Always exact, read directly from the game</td></tr>
-<tr><td>PerfectHits % from Leaderboard</td><td>Not available</td><td>Available with SongBridge + RagnaCustomsConfig.json file</td></tr>
+<tr><td>Currently played difficulty</td><td>Not communicated through Websocket.</td><td>Shown exactly.</td></tr>
+<tr><td>Duplicate custom maps (same title/artist, different mapper)</td><td>No additional data shown (by design, to avoid wrong info)</td><td>Correctly disambiguated via in-game mapper name + difficulty match.</td></tr>
+<tr><td>Song length</td><td>May be missing/incorrect for some songs</td><td>Always exact, read directly from the game.</td></tr>
+<tr><td>Local database</td><td>Not supportd.</td><td>Local database and song hashes are saved to speed up things and minimize API calls.</td></tr>
+<tr><td>PerfectHits % from Leaderboard</td><td>Not available</td><td>Available with SongBridge + RagnaCustomsConfig.json file.</td></tr>
 </table>
 
 ## Setup
