@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+	background: transparent;
+	font-family: 'Segoe UI', sans-serif;
+	display: flex;
+	justify-content: flex-start;
+	align-items: flex-end;
+	min-height: 100vh;
+	padding: 10px;
+}
+#overlay {
+	background: linear-gradient(160deg, rgba(26,20,16,0.88) 0%, rgba(16,12,10,0.88) 100%);
+	border: 2px solid #6b4a2a;
+	border-radius: 10px;
+	padding: 8px 10px;
+	color: #e8ddc8;
+	text-align: center;
+	opacity: 0;
+	transition: opacity 0.8s ease;
+	min-width: 300px;
+	max-width: 650px;
+	position: relative;
+	box-shadow: 0 10px 36px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(217,140,50,0.15);
+}
+.corner {
+	position: absolute;
+	width: 16px; height: 16px;
+	border: 2px solid #d98c32;
+	pointer-events: none;
+}
+.corner.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; border-radius: 6px 0 0 0; }
+.corner.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; border-radius: 0 6px 0 0; }
+.corner.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; border-radius: 0 0 0 6px; }
+.corner.br { bottom: -2px; right: -2px; border-left: none; border-top: none; border-radius: 0 0 6px 0; }
+#debug-badge {
+	position: absolute;
+	top: 4px;
+	right: 8px;
+	font-size: 0.55em;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	font-weight: 700;
+	padding: 1px 6px;
+	border-radius: 4px;
+	opacity: 0.7;
+	display: none;
+	pointer-events: none;
+}
+#debug-badge.source-songbridge { background: rgba(111,217,154,0.15); color: #6fd99a; border: 1px solid rgba(111,217,154,0.35); }
+#debug-badge.source-api        { background: rgba(232,168,56,0.15); color: #e8a838; border: 1px solid rgba(232,168,56,0.35); }
+#percent {
+	font-size: 2.75em;
+	font-weight: 800;
+	color: #e8a838;
+	text-shadow: 0 0 16px rgba(232,168,56,0.4);
+	line-height: 1;
+	transition: color 0.2s;
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum";
+	display: inline-block;
+	text-align: right;
+	width: 4ch;
+}
+#counts {
+	font-size: 0.9em;
+	color: #b8a888;
+	font-weight: bold;
+	line-height: 1.4;
+}
+#counts b { color: #e8ddc8; }
+#bar-bg {
+	position: relative;
+	background: rgba(217,140,50,0.1);
+	border: 1px solid rgba(217,140,50,0.2);
+	border-radius: 4px;
+	height: 8px;
+	margin-top: 4px;
+	overflow: hidden;
+}
+#bar-bg::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		repeating-linear-gradient(
+			90deg,
+			transparent 0,
+			transparent calc(20% - 1px),
+			rgba(0,0,0,0.35) calc(20% - 1px),
+			rgba(0,0,0,0.35) 20%
+		);
+	mask: linear-gradient(
+		to right,
+		transparent 0%,
+		black 3%,
+		black 97%,
+		transparent 100%
+	);
+}
+#bar-fill {
+	position: relative;
+	z-index: 2;
+	height: 100%;
+	border-radius: 4px;
+	transition: width 0.3s ease, background 0.5s ease;
+	width: 0%;
+}
+#history {
+	display: flex;
+	justify-content: center;
+	gap: 2px;
+	margin-top: 8px;
+}
+.h-dot { flex: 1; min-width: 4px; height: 6px; border-radius: 1px; }
+.h-dot:first-child { border-radius: 4px 1px 1px 4px; }
+.h-dot:last-child { border-radius: 1px 4px 4px 1px; }
+.h-perfect { background: #7bc98f; }
+.h-hit     { background: #d9a838; }
+.h-miss    { background: #b4442e; }
+.h-empty   { background: rgba(217,140,50,0.08); }
+#song-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 8px;
+}
+#cover-wrap {
+	position: relative;
+	width: 68px;
+	height: 68px;
+	flex-shrink: 0;
+	overflow: visible;
+	margin-left: -1px;
+}
+#cover {
+	width: 68px;
+	height: 68px;
+	object-fit: cover;
+	border-radius: 4px;
+	border: 2px solid #6b4a2a;
+	transition: opacity 0.3s ease;
+	display: block;
+}
+#ranked-star {
+	position: absolute;
+	top: -7px; right: -7px;
+	width: 18px; height: 18px;
+	display: none;
+	z-index: 2;
+	filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
+}
+#ranked-bar {
+	position: absolute;
+	bottom: 0; left: 0; right: 0;
+	background: rgba(232, 168, 56, 0.9);
+	border-radius: 0 0 2px 2px;
+	font-size: 8px;
+	font-weight: 800;
+	color: #100c0a;
+	text-align: center;
+	letter-spacing: 0.1em;
+	padding: 1px 0;
+	text-transform: uppercase;
+	display: none;
+}
+#song { flex: 1; min-width: 0; line-height: 1.2; text-align: left; }
+#artist {
+	font-size: 1.55em;
+	font-weight: 700;
+	color: #f2e8d5;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: clip;
+}
+#title {
+	font-size: 1.45em;
+	color: #c4a878;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: clip;
+}
+#mapper {
+	font-size: 0.85em;
+	color: #c4b090;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: clip;
+	margin-top: 3px;
+}
+#mapper b { color: #e8ddc8; }
+.diff-shield {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 15px;
+	height: 15px;
+	background: rgba(217,140,50,0.12);
+	border: 1px solid rgba(217,140,50,0.35);
+	border-radius: 3px;
+	font-size: 10px;
+	font-weight: 700;
+	color: #a08860;
+	margin: 0 1px;
+}
+.diff-shield.diff-selected {
+	background: #e8a838;
+	color: #100c0a;
+	border-color: #e8a838;
+}
+.perfect-hits {
+	color: #e8a838;
+	font-weight: 700;
+}
+#divider {
+	height: 1px;
+	margin: 14px 0 0 0;
+	background: linear-gradient(to right, transparent 5%, #6b4a2a 50%, transparent 95%);
+	position: relative;
+}
+#divider::after {
+	content: "ᛟ";
+	position: absolute;
+	left: 50%; top: 50%;
+	transform: translate(-50%, -50%);
+	padding: 0 8px;
+	font-size: 20px;
+	color: #d98c32;
+	text-shadow: 0 0 4px rgba(16,12,10,0.9), 0 0 4px rgba(16,12,10,0.9);
+}
+#top-line { display: flex; justify-content: center; align-items: center; }
+#center-group { display: inline-flex; align-items: center; gap: 9px; }
+#label {
+	font-size: 0.65em;
+	letter-spacing: 0.1em;
+	color: #a08860;
+	text-transform: uppercase;
+	white-space: nowrap;
+	opacity: 0.85;
+	margin-top: 6px;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	font-weight: 700;
+}
+#progress-bg {
+	background: rgba(217,140,50,0.1);
+	border: 1px solid rgba(217,140,50,0.2);
+	border-radius: 4px;
+	height: 8px;
+	margin: 6px 0 0 0;
+	overflow: hidden;
+	display: none;
+	position: relative;
+}
+#progress-bg::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		repeating-linear-gradient(
+			90deg,
+			transparent 0,
+			transparent calc(20% - 1px),
+			rgba(0,0,0,0.35) calc(20% - 1px),
+			rgba(0,0,0,0.35) 20%
+		);
+	mask: linear-gradient(
+		to right,
+		transparent 0%,
+		black 3%,
+		black 97%,
+		transparent 100%
+	);
+}
+#progress-fill {
+	position: relative;
+	z-index: 2;
+	height: 100%;
+	border-radius: 4px;
+	background: linear-gradient(90deg, #a86a1e, #e8a838);
+	width: 0%;
+	transition: width 3s ease-out;
+}
+</style>
+</head>
+<body>
+<div id="overlay">
+	<div class="corner tl"></div><div class="corner tr"></div>
+	<div class="corner bl"></div><div class="corner br"></div>
+	<div id="debug-badge"></div>
+	<div id="top-line">
+		<div id="center-group">
+			<div id="percent">0%</div>
+			<div id="label">
+				<span>Perfect</span>
+				<span>Hits</span>
+			</div>
+		</div>
+	</div>
+	<div id="counts">0 / 0 Runes</div>
+	<div id="bar-bg"><div id="bar-fill"></div></div>
+	<div id="history"></div>
+	<div id="divider"></div>
+	<div id="song-row">
+		<div id="cover-wrap">
+			<img id="cover" />
+			<svg id="ranked-star" viewBox="0 0 18 18">
+				<polygon points="9,1 11.5,6.5 17.5,7.2 13,11.5 14.5,17.5 9,14.5 3.5,17.5 5,11.5 0.5,7.2 6.5,6.5"
+					fill="#e8a838" stroke="#100c0a" stroke-width="0.8"/>
+			</svg>
+			<div id="ranked-bar"></div>
+		</div>
+		<div id="song">
+			<div id="artist"></div>
+			<div id="title"></div>
+			<div id="mapper"></div>
+		</div>
+	</div>
+	<div id="progress-bg">
+		<div id="progress-fill"></div>
+	</div>
+</div>
+<script>
+	const WS_URL        = "ws://127.0.0.1:8080/";
+	const TIMEOUT_MS    = 30000;
+	const HISTORY_SLOTS = 30;
+	// Set to true to permanently show the data-source badge (SongBridge/API).
+	// Leave false for a clean stream overlay; toggle on only when you
+	// personally want to verify where data is coming from.
+	const SHOW_DEBUG_BADGE = true;
+	// Lokaler Beat-State
+	let localTotalBeats = 0;
+	let localPerfect    = 0;
+	let localMisses     = 0;
+	let localStreak     = 0;
+	let localBestStreak = 0;
+	let localHistory    = [];
+	let lastSongTime    = 0;
+	// UI State
+	let lastBeatTime      = Date.now();
+	let currentSongArtist = "";
+	let currentSongTitle  = "";
+	let currentCover      = "";
+	let lastSongData      = null;
+	let songActive        = false;
+	let songEnded         = false;
+	let ws;
+	// Cached DOM
+	const overlayEl      = document.getElementById("overlay");
+	const debugBadgeEl   = document.getElementById("debug-badge");
+	const percentEl      = document.getElementById("percent");
+	const countsEl       = document.getElementById("counts");
+	const barFillEl      = document.getElementById("bar-fill");
+	const starEl         = document.getElementById("ranked-star");
+	const rankedBarEl    = document.getElementById("ranked-bar");
+	const coverEl        = document.getElementById("cover");
+	const artistEl       = document.getElementById("artist");
+	const titleEl        = document.getElementById("title");
+	const mapperEl       = document.getElementById("mapper");
+	const progressBgEl   = document.getElementById("progress-bg");
+	const progressFillEl = document.getElementById("progress-fill");
+	// History Dots einmalig erzeugen
+	const historyDots = [];
+	(function() {
+		const historyEl = document.getElementById("history");
+		for (let i = 0; i < HISTORY_SLOTS; i++) {
+			const d = document.createElement("div");
+			d.className = "h-dot h-empty";
+			historyEl.appendChild(d);
+			historyDots.push(d);
+		}
+	})();
+	function getColor(pct) {
+		if (pct === null) return "#f0b732";
+		if (pct >= 80) return "#00ff88";
+		if (pct >= 60) return "#1fffd4";
+		if (pct >= 40) return "#f0b732";
+		if (pct >= 20) return "#ff8c00";
+		return "#ff4444";
+	}
+	function getGradient(pct) {
+		if (pct === null || pct === 0) return ["#333", "#333"];
+		if (pct >= 80) return ["#00cc6a", "#00ff88"];
+		if (pct >= 60) return ["#00b8a0", "#1fffd4"];
+		if (pct >= 40) return ["#c8932a", "#f0b732"];
+		if (pct >= 20) return ["#cc6600", "#ff8c00"];
+		return ["#cc2222", "#ff4444"];
+	}
+	function fitText(el, maxSize, minSize = 12) {
+		let size = maxSize;
+		el.style.fontSize = size + "px";
+		while (el.scrollWidth > el.clientWidth && size > minSize) {
+			size--;
+			el.style.fontSize = size + "px";
+		}
+	}
+	// Throttle-Timer
+	let renderPending = false;
+	function scheduleRender() {
+		if (renderPending) return;
+		renderPending = true;
+		requestAnimationFrame(() => {
+			renderPercent();
+			renderHistory();
+			renderCounts(
+				lastSongData ? lastSongData.liveComboBlue  || 0 : 0,
+				lastSongData ? lastSongData.liveComboYellow || 0 : 0
+			);
+			renderProgress();
+			renderPending = false;
+		});
+	}
+	function renderHistory() {
+		const empty = HISTORY_SLOTS - localHistory.length;
+		for (let i = 0; i < HISTORY_SLOTS; i++) {
+			const cls = i < empty ? "h-dot h-empty" : "h-dot h-" + localHistory[i - empty];
+			if (historyDots[i].className !== cls) historyDots[i].className = cls;
+		}
+	}
+	function resetLocalState() {
+		localTotalBeats = 0;
+		localPerfect    = 0;
+		localMisses     = 0;
+		localStreak     = 0;
+		localBestStreak = 0;
+		localHistory    = [];
+		lastSongTime    = 0;
+	}
+	function renderPercent() {
+		const pct = localTotalBeats > 0
+			? Math.round(localPerfect / localTotalBeats * 100)
+			: null;
+		percentEl.textContent      = pct !== null ? pct + "%" : "0%";
+		percentEl.style.color      = getColor(pct);
+		const [g1, g2]             = getGradient(pct);
+		barFillEl.style.background = `linear-gradient(90deg, ${g1}, ${g2})`;
+		barFillEl.style.width      = (pct !== null ? pct : 0) + "%";
+	}
+	function renderCounts(blue, yellow) {
+		if (lastSongData && lastSongData.scoreAvailable) {
+			const d         = lastSongData;
+			const delaySign = d.scoreDeltaAvg > 0 ? "+" : "";
+			const dist      = parseFloat(d.scoreDist).toLocaleString('de-DE',
+				{minimumFractionDigits: 2, maximumFractionDigits: 2});
+			countsEl.innerHTML =
+				`<span style="color:#7bc98f">✓</span> ${d.scoreHit} (${d.scoreHitPct}%) &nbsp; ` +
+				`<span style="color:#b4442e">✗</span> ${d.scoreMissed} (${d.scoreMissPct}%) &nbsp; ◎ ${d.scoreTotal}<br>` +
+				`📏 ${dist}m &nbsp; ` +
+				`<span style="color:#4a9eff;font-size:1.2rem;">●</span> ${d.scoreComboBlue} &nbsp; ` +
+				`<span style="color:#f0b732;font-size:1.2rem;">●</span> ${d.scoreComboYellow} &nbsp; ` +
+				`⌛${delaySign}${d.scoreDeltaAvg}ms &nbsp; 🔥 ${localBestStreak}`;
+		} else {
+			countsEl.innerHTML =
+				`${localPerfect} / ${localTotalBeats} Runes &nbsp; ` +
+				`<span style="color:#4a9eff;font-size:1.2rem;">●</span> ${blue} &nbsp; ` +
+				`<span style="color:#f0b732;font-size:1.2rem;">●</span> ${yellow} &nbsp; ` +
+				`<span style="color:#b4442e">✗ ${localMisses}</span><br>` +
+				`🔥 Streak: <span style="color:#7bc98f">${localStreak}</span> &nbsp;&middot;&nbsp; ` +
+				`Highest: <span style="color:#7bc98f">${localBestStreak}</span>`;
+		}
+	}
+	function renderProgress() {
+		if (!lastSongData) return;
+		const duration = Number(lastSongData.songDuration);
+		const hasDur   = !isNaN(duration) && duration > 0 && duration !== 999;
+		const songBpm  = Number(lastSongData.songBpm) || 0;
+		const hasBpm   = songBpm > 0;
+		if (lastSongData.scoreAvailable) {
+			if (hasDur && hasBpm) {
+				progressBgEl.style.display = "block";
+				progressFillEl.style.width = "100%";
+			}
+		} else if (hasDur && hasBpm) {
+			const prgPct = Math.min(lastSongTime / (songBpm / 60) / duration * 100, 100);
+			progressBgEl.style.display = "block";
+			progressFillEl.style.width = prgPct + "%";
+		} else {
+			progressBgEl.style.display = "none";
+			progressFillEl.style.width = "0%";
+		}
+	}
+	function renderDebugBadge(data) {
+		if (!SHOW_DEBUG_BADGE) {
+			debugBadgeEl.style.display = "none";
+			return;
+		}
+		const source = data.songDataSource || "API";
+		debugBadgeEl.textContent = source === "SongBridge" ? "SongBridge" : "API Fallback";
+		debugBadgeEl.className = "source-" + source.toLowerCase();
+		debugBadgeEl.style.display = "block";
+	}
+	function updateSongInfo(data) {
+		lastSongData = data;
+		if (!songEnded) {
+			songActive = data.active;
+			const hasRequiredInfo =
+				data.songArtist &&
+				data.songTitle;
+			if (data.active && hasRequiredInfo) {
+				overlayEl.style.opacity = "1";
+			}
+		}
+		// Cover
+		const fallbackCover = "logo.webp";
+		if (data.coverUrl && data.coverUrl.trim() !== "") {
+			currentCover = data.coverUrl;
+		} else if (data.active && localTotalBeats === 0) {
+			currentCover = fallbackCover;
+		}
+		if (coverEl.src !== currentCover) {
+			coverEl.style.opacity = 0.6;
+			coverEl.onload = () => coverEl.style.opacity = 1;
+			coverEl.src = currentCover;
+		}
+		// Ranked
+		starEl.style.display      = data.songRanked ? "block" : "none";
+		rankedBarEl.style.display = data.songRanked ? "block" : "none";
+		rankedBarEl.textContent   = data.songRanked ? "ranked" : "";
+		// Artist
+		if (data.songArtist && data.songArtist !== currentSongArtist) {
+			currentSongArtist    = data.songArtist;
+			artistEl.textContent = currentSongArtist;
+			fitText(artistEl, 24, 14);
+		}
+		// Title
+		if (data.songTitle && data.songTitle !== currentSongTitle) {
+			currentSongTitle    = data.songTitle;
+			titleEl.textContent = currentSongTitle;
+			fitText(titleEl, 22, 12);
+		}
+		// Mapper + Meta (always rebuilt, since selected-diff highlighting
+		// and perfect-hits can change between renders even for the "same"
+		// song info)
+		const hasMapper   = data.songMapper && data.songMapper.trim() !== "";
+		const duration    = Number(data.songDuration);
+		const hasDuration = !isNaN(duration) && duration > 0 && duration !== 999;
+		const hasBpm      = data.songBpm && data.songBpm > 0;
+		const hasDiffs    = data.songDiffs && data.songDiffs.trim() !== "";
+		const hasPerfectHits = data.songPerfectHits !== null && data.songPerfectHits !== undefined;
+		let mapperText = "";
+		if (hasMapper) mapperText = `🗺️ Mapper: <b>${data.songMapper}</b>`;
+		if (hasDuration) {
+			const m = Math.floor(duration / 60);
+			const s = Math.floor(duration % 60).toString().padStart(2, "0");
+			mapperText += `${mapperText ? " &nbsp;" : ""}<span style="color:#e8ddc8;">🕗 ${m}:${s}</span>`;
+		}
+		if (hasBpm) {
+			mapperText += `${mapperText ? " &nbsp;" : ""}<span style="color:#e8ddc8;">🥁 ${data.songBpm}</span>`;
+		}
+		if (hasDiffs) {
+			const diffList  = data.songDiffs.split(",").map(d => d.trim()).filter(Boolean);
+			const diffLabel = diffList.length === 1 ? "Diff" : "Diffs";
+			const selected  = data.songSelectedDiff !== null && data.songSelectedDiff !== undefined
+				? String(data.songSelectedDiff) : null;
+			const diffHtml  = diffList.map(d =>
+				`<span class="diff-shield${(selected && d === selected) ? " diff-selected" : ""}">${d}</span>`
+			).join("");
+			mapperText += `${mapperText ? " &nbsp;" : ""}<span style="color:#e8ddc8;">⚔️ ${diffLabel}: ${diffHtml}</span>`;
+		}
+		if (hasPerfectHits) {
+			const rawPct = Number(data.songPerfectHits);
+			const pct = Number.isInteger(rawPct) ? rawPct.toString() : rawPct.toFixed(1);
+			const pctColor = getColor(rawPct);
+			mapperText += `${mapperText ? " &nbsp;" : ""}<span class="perfect-hits" style="color:${pctColor}">🏆 ${pct}%</span>`;
+		}
+		if (mapperEl.innerHTML !== mapperText) {
+			mapperEl.innerHTML = mapperText;
+			fitText(mapperEl, 13, 10);
+		}
+		// renderDebugBadge(data);
+		renderCounts(data.liveComboBlue || 0, data.liveComboYellow || 0);
+		renderPercent();
+		renderProgress();
+	}
+	// Timeout
+	setInterval(() => {
+		if (!songActive && Date.now() - lastBeatTime >= TIMEOUT_MS) {
+			overlayEl.style.opacity = "0";
+		}
+	}, 500);
+	function connect() {
+		ws = new WebSocket(WS_URL);
+		ws.onopen = () => {
+			ws.send(JSON.stringify({
+				request: "Subscribe",
+				id: "ragnarock-sub",
+				events: { General: ["Custom"] }
+			}));
+		};
+		ws.onmessage = (event) => {
+			try {
+				const wrapper = JSON.parse(event.data);
+				if (!wrapper.event || wrapper.event.type !== "Custom") return;
+				const data = JSON.parse(wrapper.data.data);
+				// Song Start → Reset
+				if (data.type === "ragnarock-start") {
+					songEnded    = false;
+					songActive   = true;
+					lastBeatTime = Date.now();
+					resetLocalState();
+					percentEl.textContent      = "0%";
+					percentEl.style.color      = "#f0b732";
+					barFillEl.style.background = "#333";
+					barFillEl.style.width      = "0%";
+					progressFillEl.style.transition = "none";
+					progressFillEl.style.width = "0%";
+					setTimeout(() => {
+						progressFillEl.style.transition = "width 3s ease-out";
+					}, 50);
+					renderHistory();
+					renderCounts(0, 0);
+					return;
+				}
+				// Beat Hit
+				if (data.type === "ragnarock-beat_hit") {
+					lastBeatTime = Date.now();
+					localTotalBeats++;
+					if (data.isPerfect) {
+						localPerfect++;
+						localStreak++;
+						if (localStreak > localBestStreak) localBestStreak = localStreak;
+					} else {
+						localStreak = 0;
+					}
+					localHistory.push(data.isPerfect ? "perfect" : "hit");
+					if (localHistory.length > HISTORY_SLOTS) localHistory.shift();
+					if (data.time) lastSongTime = Number(data.time);
+					scheduleRender();
+					return;
+				}
+				// Beat Miss
+				if (data.type === "ragnarock-beat_miss") {
+					lastBeatTime = Date.now();
+					localTotalBeats++;
+					localMisses++;
+					localStreak = 0;
+					localHistory.push("miss");
+					if (localHistory.length > HISTORY_SLOTS) localHistory.shift();
+					if (data.time) lastSongTime = Number(data.time);
+					scheduleRender();
+					return;
+				}
+				// Song Info (cover, meta, combos, score)
+				if (data.type === "ragnarock") {
+					updateSongInfo(data);
+					return;
+				}
+				// Combo
+				if (data.type === "ragnarock-combo") {
+					if (lastSongData) {
+						lastSongData.liveComboBlue   = data.liveComboBlue;
+						lastSongData.liveComboYellow = data.liveComboYellow;
+					}
+					renderCounts(data.liveComboBlue || 0, data.liveComboYellow || 0);
+					return;
+				}
+				// Song End
+				if (data.type === "ragnarock-end") {
+					songEnded    = true;
+					songActive   = false;
+					lastBeatTime = Date.now();
+					if (lastSongData && lastSongData.songBpm &&
+						lastSongData.songDuration && lastSongData.songDuration !== 999) {
+						progressBgEl.style.display = "block";
+						progressFillEl.style.width = "100%";
+					}					
+					return;
+				}
+			} catch(e) {}
+		};
+		ws.onclose = () => setTimeout(connect, 2000);
+		ws.onerror = () => {};
+	}
+	connect();
+</script>
+</body>
+</html>
