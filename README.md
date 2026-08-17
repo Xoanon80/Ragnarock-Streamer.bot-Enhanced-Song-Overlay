@@ -160,7 +160,7 @@ This step completes the original idea of implementing statistics and added some 
 ## Setup
 1. Install [SongBridge](https://github.com/Xoanon80/Ragnarock-SongBridge) (choose Flat or VR variant matching your setup) - see that repository's README for installation.
 2. Import [RagnarockSongBridgeActions.bot](4_V2_SongBridge_LocalStorage/RagnarockSongBridgeActions.bot) into Streamer.bot.
-3. Replace `overlay.html` from the Enhanced Overlay setup with the one in [4_V2_SongBridge_LocalStorage/resources](4_V2_SongBridge_LocalStorage/resources).
+3. If you update from V1: Replace `overlay.html` from the Enhanced Overlay setup with the one in [4_V2_SongBridge_LocalStorage/resources](4_V2_SongBridge_LocalStorage/resources).
 4. For PerfectHits % display in overlay you need to place the RagnaCustomsConfig.json into the Ragnarock directory (```C:\Program Files (x86)\Steam\steamapps\common\Ragnarock\Ragnarock\Binaries\Win64```) and enter your API-Key, your username and your platform your playing on.
 
 ## Screenshot v2 overlay
