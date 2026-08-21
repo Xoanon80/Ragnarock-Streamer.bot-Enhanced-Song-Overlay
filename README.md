@@ -164,6 +164,11 @@ This step completes the original idea of implementing statistics and added some 
 3. If you update from V1: Replace `overlay.html` from the Enhanced Overlay setup with the one in [4_V2_SongBridge_LocalStorage/resources](4_V2_SongBridge_LocalStorage/resources).
 4. For PerfectHits % display in overlay you need to place the RagnaCustomsConfig.json into the Ragnarock directory (```C:\Program Files (x86)\Steam\steamapps\common\Ragnarock\Ragnarock\Binaries\Win64```) and enter your API-Key, your username and your platform your playing on.
 
+> [!WARNING]
+> Check the new imported Streamer.bot actions for<br />
+> a) Open "Execute Code" sub actions, hit "Find references", hit "Save & compile"<br />
+> b) If you don't have your Ragnarock in the usual C:\-Steam-Folder, please check "Execute Code" sub actions for correct file paths and match to your installation
+
 ## Screenshot v2 overlay
 
 ![Overlay Screenshots](ragnarock-overlays-screenshots-github-v2.jpg)
